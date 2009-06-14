@@ -7,3 +7,4 @@ README
 t/EUCJPASCII.t
 t/pod.t
 ucm/eucJP-ascii.ucm
+ucm/mkucm.pl

@@ -3,6 +3,7 @@
 name:         Encode-EUCJPASCII
 version:      0.01
 version_from: EUCJPASCII.pm
+installdirs:  site
 requires:
     Encode:                        1.41
 

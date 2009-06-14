@@ -1,14 +1,9 @@
-Encode::EUCJPASCII version 0.1
+Encode::EUCJPASCII version 0.01
 ========
 
 NAME
-       Encode::EUCJPASCII - <describe encoding>
+       Encode::EUCJPASCII - An eucJP-open mapping
 
-SYNOPSIS
-       use Encode::EUCJPASCII;
-       #<put more words here>
-ABSTRACT
-      <fill this in>
 INSTALLATION
 
 To install this module type the following:
@@ -24,8 +19,9 @@ This module requires perl version 5.7.3 or later.
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2002 Your Name <your@address.domain>
+Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 
 
+$$
