@@ -1,0 +1,9 @@
+Changes
+EUCJPASCII.pm
+Makefile.PL
+MANIFEST			This list of files
+META.yml
+README
+t/EUCJPASCII.t
+t/pod.t
+ucm/eucJP-ascii.ucm
