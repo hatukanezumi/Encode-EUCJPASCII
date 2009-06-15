@@ -1,23 +1,43 @@
 use strict;
 # Adjust the number here!
-use Test::More tests => 8;
+use Test::More tests => 24;
 
 use_ok('Encode');
 use_ok('Encode::EUCJPASCII');
-
-is("\xa1\xc1\xa1\xc2\xa1\xdd\xa1\xf1\xa1\xf2\xa2\xcc\xa1\xc2\xa2\xcc\x8f\xa2\xc3",
-encode('eucJP-ascii',"\x{301C}\x{2016}\x{2212}\x{00A2}\x{00A3}\x{00AC}\x{2016}\x{00AC}\x{00A6}"));
-is("\x8f\xa2\xb7\xa1\xc2\xa1\xdd\xa1\xf1\xa1\xf2\xa2\xcc\xa1\xc2\xa2\xcc\x8f\xa2\xc3",
-   encode('eucJP-ascii',"\x{FF5E}\x{2225}\x{FF0D}\x{FFE0}\x{FFE1}\x{FFE2}\x{2225}\x{FFE2}\x{FFE4}"));
-is("\x8f\xa2\xb7\xa1\xc2\xa1\xdd\xa1\xf1\xa1\xf2\xa2\xcc\xa1\xc2\xa2\xcc\x8f\xa2\xc3",
-   encode('x-eucJP-open-19970715-ascii',"\x{FF5E}\x{2225}\x{FF0D}\x{FFE0}\x{FFE1}\x{FFE2}\x{2225}\x{FFE2}\x{FFE4}"));
-is("\x8f\xa2\xb7\xa1\xc2\xa1\xdd\xa1\xf1\xa1\xf2\xa2\xcc\xa1\xc2\xa2\xcc\x8f\xa2\xc3",
-   encode('eucjp-ascii',"\x{FF5E}\x{2225}\x{FF0D}\x{FFE0}\x{FFE1}\x{FFE2}\x{2225}\x{FFE2}\x{FFE4}"));
-is("\x8f\xa2\xb7\xa1\xc2\xa1\xdd\xa1\xf1\xa1\xf2\xa2\xcc\xa1\xc2\xa2\xcc\x8f\xa2\xc3",
-   encode('eucjpascii',"\x{FF5E}\x{2225}\x{FF0D}\x{FFE0}\x{FFE1}\x{FFE2}\x{2225}\x{FFE2}\x{FFE4}"));
-#is(pack('H*','1b2442252221412142215d21712172224c2142224c7c7c1b2842'),
-#   encode('x-iso2022jp-ascii',"\x{FF71}\x{FF5E}\x{2225}\x{FF0D}\x{FFE0}\x{FFE1}\x{FFE2}\x{2225}\x{FFE2}\x{FFE4}"));
-is("\e(I\x31\e\$B\x21\x41\x21\x42\x21\x5d\x21\x71\x21\x72\x22\x4c\x21\x42\x22\x4c\e\$(D\x22\x43\e(B",
-   encode('x-iso2022jp-ascii',"\x{FF71}\x{301C}\x{2225}\x{FF0D}\x{FFE0}\x{FFE1}\x{FFE2}\x{2225}\x{FFE2}\x{FFE4}"));
-
+test('eucjp');
+test('7bit');
 # Add more test here!
+
+sub test {
+    my $in = shift;
+    local($/) = '';
+    open WORDS, "testin/$in.txt" or die "open: $!";
+    while (<WORDS>) {
+	next if /^#/;
+	my @w = split /\n/, $_;
+	my ($renc, $rdec) = split /,/, shift @w;
+	my $cset = shift @w;
+	my $byte = eval(shift @w);
+	die $@ if $@ or !$byte;
+	my $uni = eval(join "\n", @w);
+	die $@ if $@ or !$uni;
+	my $enc = encode($cset, $uni);
+	my $dec = decode($cset, $byte);
+
+	$enc = sprintf "\\x%*v02X", "\\x", $enc;
+	$byte = sprintf "\\x%*v02X", "\\x", $byte;
+	$dec = sprintf "\\x{%*v04X}", "}\\x{", $dec;
+	$uni = sprintf "\\x{%*v04X}", "}\\x{", $uni;
+
+	if ($renc eq 'GOOD') {
+	    is($enc, $byte);
+	} elsif ($renc eq 'BAD') {
+	    isnt($enc, $byte);
+	}
+	if ($rdec eq 'GOOD') {
+	    is($dec, $uni);
+	} elsif ($rdec eq 'BAD') {
+	    isnt($dec, $uni);
+	}
+    }
+}

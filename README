@@ -1,8 +1,8 @@
-Encode::EUCJPASCII version 0.01
+Encode::EUCJPASCII version 0.02
 ========
 
 NAME
-       Encode::EUCJPASCII - An eucJP-open mapping
+       Encode::EUCJPASCII - eucJP-ascii - An eucJP-open mapping
 
 INSTALLATION
 

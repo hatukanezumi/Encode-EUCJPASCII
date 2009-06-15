@@ -6,5 +6,7 @@ META.yml
 README
 t/EUCJPASCII.t
 t/pod.t
+testin/7bit.txt
+testin/eucjp.txt
 ucm/eucJP-ascii.ucm
 ucm/mkucm.pl

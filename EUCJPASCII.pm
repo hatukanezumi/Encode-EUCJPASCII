@@ -1,16 +1,15 @@
 package Encode::EUCJPASCII;
 use strict;
 use warnings;
-our $VERSION = "0.01";
+our $VERSION = "0.02";
  
 use Encode qw(:fallbacks);
-use Encode::JP::JIS7;
 use XSLoader;
 XSLoader::load(__PACKAGE__,$VERSION);
 
 Encode::define_alias(qr/\beuc-?jp(-?open)?(-?19970715)?-?ascii$/i
 		     => '"eucJP-ascii"');
-Encode::define_alias(qr/\biso-?2022-?jp-?ascii$/i
+Encode::define_alias(qr/\b(x-)?iso-?2022-?jp-?ascii$/i
 		     => '"x-iso2022jp-ascii"');
 
 my $name = 'x-iso2022jp-ascii';
@@ -22,6 +21,7 @@ use base qw(Encode::Encoding);
 sub needs_lines { 1 }
 
 use Encode::CJKConstants qw(:all);
+use Encode::JP::JIS7;
 
 sub decode($$;$) {
     my ( $obj, $str, $chk ) = @_;
@@ -37,9 +37,7 @@ sub decode($$;$) {
 	    $c =~ s/\x7E/\x21\x31/g;
 	    "\e\$B".$c."\e(B";
 	}eg;
-	$s = "\e(B$s" unless $s =~ /^\e/;
-	$s =~ s/\e\(B$//;
-	$s;
+	($s =~ /^\e/? "\e(B": '').$s;
     }egsx;
     $residue .= Encode::JP::JIS7::jis_euc( \$str );
     $_[1] = $residue if $chk;
@@ -113,7 +111,7 @@ __END__
 
 =head1 NAME
  
-Encode::EUCJPASCII - An eucJP-open mapping
+Encode::EUCJPASCII - eucJP-ascii - An eucJP-open mapping
  
 =head1 SYNOPSIS
 
@@ -128,16 +126,16 @@ This module provides eucJP-ascii, one of eucJP-open mappings,
 and its derivative.
 Following encodings are supported.
 
-  Canonical    Alias                                  Description
-  --------------------------------------------------------------------
-  eucJP-ascii  qr/\beuc-?jp-?ascii$/i                 eucJP-ascii
-               qr/\beuc-?jp-?open-?19970715-?ascii$/i
-  x-iso2022jp-ascii                                   7-bit counterpart
-               qr/\biso-?2022-?jp-?ascii/i            of eucJP-ascii
-  --------------------------------------------------------------------
+  Canonical    Alias                           Description
+  --------------------------------------------------------------
+  eucJP-ascii                                  eucJP-ascii
+               qr/\beuc-?jp(-?open)?(-?19970715)?-?ascii$/i
+  x-iso2022jp-ascii                            7-bit counterpart
+               qr/\b(x-)?iso-?2022-?jp-?ascii$/i
+  --------------------------------------------------------------
 
-B<Note>: C<x-iso2022jp-ascii> is unofficial encoding.
-This name had not been registered by any standardizing authorities.
+B<Note>: C<x-iso2022jp-ascii> is unofficial encoding name:
+It had never been registered by any standards bodies.
 
 =head1 SEE ALSO
 
