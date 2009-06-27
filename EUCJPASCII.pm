@@ -1,7 +1,7 @@
 package Encode::EUCJPASCII;
 use strict;
 use warnings;
-our $VERSION = "0.02";
+our $VERSION = "0.03";
  
 use Encode qw(:fallbacks);
 use XSLoader;
@@ -23,12 +23,31 @@ sub needs_lines { 1 }
 use Encode::CJKConstants qw(:all);
 use Encode::JP::JIS7;
 
+# 26 row-cell pairs swapped between JIS C 6226-1978 and JIS X 0208-1983.
+# cf. JIS X 0208:1997 Annex 2 Table 1.
+my @swap1978 = ("\x30\x33" => "\x72\x4D", "\x32\x29" => "\x72\x74",
+		"\x33\x42" => "\x69\x5a", "\x33\x49" => "\x59\x78",
+		"\x33\x76" => "\x63\x5e", "\x34\x43" => "\x5e\x75",
+		"\x34\x52" => "\x6b\x5d", "\x37\x5b" => "\x70\x74",
+		"\x39\x5c" => "\x62\x68", "\x3c\x49" => "\x69\x22",
+		"\x3F\x59" => "\x70\x57", "\x41\x28" => "\x6c\x4d",
+		"\x44\x5B" => "\x54\x64", "\x45\x57" => "\x62\x6a",
+		"\x45\x6e" => "\x5b\x6d", "\x45\x73" => "\x5e\x39",
+		"\x46\x76" => "\x6d\x6e", "\x47\x68" => "\x6a\x24",
+		"\x49\x30" => "\x5B\x58", "\x4b\x79" => "\x50\x56",
+		"\x4c\x79" => "\x69\x2e", "\x4F\x36" => "\x64\x46",
+		"\x36\x46" => "\x74\x21", "\x4B\x6A" => "\x74\x22",
+		"\x4D\x5A" => "\x74\x23", "\x60\x76" => "\x74\x24",
+		);
+my %swap1978 = (@swap1978, reverse @swap1978);
+
 sub decode($$;$) {
     my ( $obj, $str, $chk ) = @_;
     my $residue = '';
     if ($chk) {
         $str =~ s/([^\x00-\x7f].*)$//so and $residue = $1;
     }
+    # Handle JIS X 0201 sequences.
     $str =~ s{\e\(J ([^\e]*) (?:\e\(B)?}{
 	my $s = $1;
 	$s =~ s{([\x5C\x7E]+)}{
@@ -38,6 +57,12 @@ sub decode($$;$) {
 	    "\e\$B".$c."\e(B";
 	}eg;
 	($s =~ /^\e/? "\e(B": '').$s;
+    }egsx;
+    # Handle JIS C 6226-1978 sequences.
+    $str =~ s{\e\$\@ ([^\e]*) (?:\e\$B)?}{
+	my $s = $1;
+	$s =~ s{([\x21-\x7E]{2})}{$swap1978{$1} || $1}eg;
+	"\e\$B".$s;
     }egsx;
     $residue .= Encode::JP::JIS7::jis_euc( \$str );
     $_[1] = $residue if $chk;
@@ -58,9 +83,8 @@ sub encode($$;$) {
 # cat_decode
 #
 my $re_scan_jis_g = qr{
-    \G ( ($RE{JIS_0212}) |  $RE{JIS_0208}  |
-	 (\e\(J) |
-	 ($RE{ISO_ASC})  | ($RE{JIS_KANA}) | )
+    \G ( ($RE{JIS_0212}) | (\e\$\@) |  $RE{JIS_0208}  |
+	 (\e\(J) | ($RE{ISO_ASC})  | ($RE{JIS_KANA}) | )
       ([^\e]*)
   }x;
 
@@ -72,12 +96,12 @@ sub cat_decode {    # ($obj, $dst, $src, $pos, $trm, $chk)
     my $opos = pos($$rsrc);
     pos($$rsrc) = $pos;
     while ( $$rsrc =~ /$re_scan_jis_g/gc ) {
-        my ( $esc, $esc_0212, $esc_0201, $esc_asc, $esc_kana, $chunk ) =
-	    ( $1, $2, $3, $4, $5, $6 );
+        my ( $esc, $esc_0212, $esc_0208_1978, $esc_0201, $esc_asc, $esc_kana, $chunk ) =
+	    ( $1, $2, $3, $4, $5, $6, $7 );
 
         unless ($chunk) { $esc or last; next; }
 	
-        if ( $esc && !$esc_asc && !$esc_0201 ) {
+        if ( $esc && !$esc_asc && !$esc_0208_1978 && !$esc_0201 ) {
             $chunk =~ tr/\x21-\x7e/\xa1-\xfe/;
             if ($esc_kana) {
                 $chunk =~ s/([\xa1-\xdf])/\x8e$1/og;
@@ -87,6 +111,11 @@ sub cat_decode {    # ($obj, $dst, $src, $pos, $trm, $chk)
             }
             $chunk = Encode::decode( 'eucJP-ascii', $chunk, 0 );
         }
+	elsif ( $esc_0208_1978 ) {
+	    $chunk =~ s{([\x21-\x7E]{2})}{$swap1978{$1} || $1}eg;
+            $chunk =~ tr/\x21-\x7e/\xa1-\xfe/;
+            $chunk = Encode::decode( 'eucJP-ascii', $chunk, 0 );
+	}
 	elsif ( $esc_0201 ) {
 	    $chunk =~ s/\x5C/\xA1\xEF/og;
 	    $chunk =~ s/\x7E/\xA1\xB1/og;
@@ -101,9 +130,9 @@ sub cat_decode {    # ($obj, $dst, $src, $pos, $trm, $chk)
         $$rdst .= $chunk;
         $$rpos = pos($$rsrc);
     }
-$$rpos = pos($$rsrc);
-pos($$rsrc) = $opos;
-return '';
+    $$rpos = pos($$rsrc);
+    pos($$rsrc) = $opos;
+    return '';
 }
 
 1;

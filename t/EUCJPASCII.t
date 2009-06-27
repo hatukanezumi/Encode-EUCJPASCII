@@ -1,6 +1,6 @@
 use strict;
 # Adjust the number here!
-use Test::More tests => 24;
+use Test::More tests => 28;
 
 use_ok('Encode');
 use_ok('Encode::EUCJPASCII');
