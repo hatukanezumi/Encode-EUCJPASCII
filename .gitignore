@@ -1,0 +1,15 @@
+EUCJPASCII.xs
+EUCJPASCII_t.fnm
+MYMETA.json
+MYMETA.yml
+Makefile
+
+*.bs
+EUCJPASCII*.c
+*.o
+*.exh
+EUCJPASCII_t.h
+blib/
+pm_to_blib
+
+*.old
